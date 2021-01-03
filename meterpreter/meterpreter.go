@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/lesnuages/hershell/shell"
+	"hershell/shell"
 )
 
 // Meterpreter function allows to connect back

